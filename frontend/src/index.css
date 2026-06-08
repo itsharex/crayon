@@ -39,10 +39,14 @@ body {
 }
 
 /* 只允许以下元素选中 */
+/* 注意：不要把 .xterm 加进来。xterm.js 自己管理选区（SelectionService +
+   canvas 绘制 selectionBackground），其默认样式为 user-select: none。
+   若强制设为 text，浏览器原生 DOM 选择会与 xterm 内部选区同时生效，
+   导致拖动鼠标跨整个终端选中大片内容。copyOnSelect/getSelection 走的是
+   xterm API，不依赖原生选择，因此无需开启原生 text 选择。 */
 input,
 textarea,
 [contenteditable="true"],
-.xterm,
 .selectable {
   user-select: text;
   -webkit-user-select: text;

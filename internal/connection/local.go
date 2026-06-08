@@ -118,7 +118,23 @@ func (c *LocalShellConnection) Connect() error {
 		}
 	} else {
 		// Unix-like 系统
-		cmd = exec.Command(c.shell)
+		// 以登录 shell 方式启动，与 Terminal.app / iTerm 行为一致：
+		// 通过将 argv[0] 设为以 "-" 开头（如 "-zsh"），shell 会识别为登录 shell，
+		// 依次 source /etc/zprofile（触发 path_helper）、~/.zprofile、~/.zlogin 等，
+		// 从而补全 GUI 应用（由 launchd 以极简环境启动）所缺失的 PATH 及其他环境变量。
+		// 这样用户无需再手动执行 `zsh -l`。
+		shellPath, err := exec.LookPath(c.shell)
+		if err != nil {
+			// 找不到时退回原始名称，交由 exec 处理错误
+			shellPath = c.shell
+		}
+		cmd = exec.Command(shellPath)
+		// argv[0] 前缀 "-" 标记为登录 shell（取 shell 可执行文件名，如 zsh -> -zsh）
+		loginName := shellPath
+		if idx := strings.LastIndex(loginName, "/"); idx >= 0 {
+			loginName = loginName[idx+1:]
+		}
+		cmd.Args = []string{"-" + loginName}
 	}
 
 	// 设置工作目录
