@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -141,7 +142,7 @@ func (c *TelnetConnection) setStatus(status ConnectionStatus) {
 func (c *TelnetConnection) Connect() error {
 	c.setStatus(StatusConnecting)
 
-	addr := fmt.Sprintf("%s:%d", c.host, c.port)
+	addr := net.JoinHostPort(c.host, strconv.Itoa(c.port))
 	conn, err := net.DialTimeout("tcp", addr, c.timeout)
 	if err != nil {
 		c.setStatus(StatusError)
@@ -279,7 +280,7 @@ func (c *TelnetConnection) autoLogin() {
 		default:
 			// 非阻塞读取
 			c.conn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-			n, err := c.output.(io.Reader).Read(tempBuf)
+			n, err := c.output.Read(tempBuf)
 			if err != nil {
 				if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 					continue

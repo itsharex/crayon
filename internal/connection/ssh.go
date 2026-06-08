@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -247,7 +248,7 @@ func (c *SSHConnection) createHostKeyCallback() ssh.HostKeyCallback {
 		var keyErr *knownhosts.KeyError
 		if errors.As(err, &keyErr) && len(keyErr.Want) == 0 {
 			// 首次连接，自动添加主机密钥
-			return c.addHostKey(knownHostsPath, hostname, key)
+			return c.addHostKey(knownHostsPath, key)
 		}
 
 		// 主机密钥变更或其他错误
@@ -256,7 +257,7 @@ func (c *SSHConnection) createHostKeyCallback() ssh.HostKeyCallback {
 }
 
 // addHostKey 添加主机密钥到 known_hosts 文件
-func (c *SSHConnection) addHostKey(knownHostsPath, hostname string, key ssh.PublicKey) error {
+func (c *SSHConnection) addHostKey(knownHostsPath string, key ssh.PublicKey) error {
 	// 格式化主机条目（包含端口）
 	var hostEntry string
 	if c.port != 22 {
@@ -297,7 +298,7 @@ func (c *SSHConnection) Connect() error {
 		Timeout:         10 * time.Second,
 	}
 
-	addr := fmt.Sprintf("%s:%d", c.host, c.port)
+	addr := net.JoinHostPort(c.host, strconv.Itoa(c.port))
 	client, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
 		c.setStatus(StatusError)
